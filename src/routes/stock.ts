@@ -3,6 +3,8 @@ import { getKLineData } from '../services/sinaService';
 
 const router = Router();
 
+const STOCK_CODE_PATTERN = /^\d{6}$/;
+
 router.get('/kline', async (req: Request, res: Response) => {
   try {
     const { code, days } = req.query;
@@ -14,7 +16,25 @@ router.get('/kline', async (req: Request, res: Response) => {
       });
     }
 
-    const daysNum = days ? Math.min(parseInt(days as string, 10) || 500, 1023) : 500;
+    if (!STOCK_CODE_PATTERN.test(code)) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: '股票代码格式不正确，应为6位数字',
+      });
+    }
+
+    let daysNum = 500;
+    if (days !== undefined) {
+      const parsed = parseInt(days as string, 10);
+      if (Number.isNaN(parsed) || parsed < 1) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'days 参数应为正整数',
+        });
+      }
+      daysNum = Math.min(parsed, 1023);
+    }
+
     const data = await getKLineData(code, daysNum);
 
     if (data.length === 0) {

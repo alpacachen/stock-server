@@ -9,11 +9,34 @@ interface SinaKLineRawData {
   volume: string;
 }
 
-function getExchange(code: string): 'sh' | 'sz' {
-  return code.startsWith('6') ? 'sh' : 'sz';
+export interface KLineData {
+  day: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
 }
 
-export async function getKLineData(code: string, days: number = 500) {
+function getExchange(code: string): string {
+  const prefix = code.charAt(0);
+  if (prefix === '6' || prefix === '9') return 'sh';
+  if (prefix === '0' || prefix === '2' || prefix === '3') return 'sz';
+  if (prefix === '4' || prefix === '8') return 'bj';
+  return 'sz';
+}
+
+function safeParseFloat(value: string): number {
+  const n = parseFloat(value);
+  return Number.isNaN(n) ? 0 : n;
+}
+
+function safeParseInt(value: string): number {
+  const n = parseInt(value, 10);
+  return Number.isNaN(n) ? 0 : n;
+}
+
+export async function getKLineData(code: string, days: number = 500): Promise<KLineData[]> {
   const symbol = `${getExchange(code)}${code}`;
   const dataLen = Math.min(Math.max(1, days), 1023);
 
@@ -34,17 +57,17 @@ export async function getKLineData(code: string, days: number = 500) {
   );
 
   const rawData = response.data;
-  
+
   if (!Array.isArray(rawData)) {
     return [];
   }
 
   return rawData.map((item: SinaKLineRawData) => ({
     day: item.day,
-    open: parseFloat(item.open) || 0,
-    high: parseFloat(item.high) || 0,
-    low: parseFloat(item.low) || 0,
-    close: parseFloat(item.close) || 0,
-    volume: parseInt(item.volume, 10) || 0,
+    open: safeParseFloat(item.open),
+    high: safeParseFloat(item.high),
+    low: safeParseFloat(item.low),
+    close: safeParseFloat(item.close),
+    volume: safeParseInt(item.volume),
   }));
 }
