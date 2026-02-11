@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express';
-import { getKLineData } from '../services/sinaService';
+import { getKLineData } from '../services/tencentService';
 import { getHotStocks } from '../services/eastmoneyService';
 
 const router = Router();
 
-const STOCK_CODE_PATTERN = /^\d{6}$/;
+// 支持5位港股代码和6位沪深代码
+const STOCK_CODE_PATTERN = /^\d{5,6}$/;
 
 router.get('/kline', async (req: Request, res: Response) => {
   try {
@@ -20,7 +21,7 @@ router.get('/kline', async (req: Request, res: Response) => {
     if (!STOCK_CODE_PATTERN.test(code)) {
       return res.status(400).json({
         error: 'Bad Request',
-        message: '股票代码格式不正确，应为6位数字',
+        message: '股票代码格式不正确，应为5位（港股）或6位（沪深）数字',
       });
     }
 
